@@ -1,23 +1,54 @@
 import time
+import json
+import os
 class Task:
-    def __init__(self, task_name) -> None:
+    def __init__(self, task_name, done=False) -> None:
         if isinstance(task_name, str):
             self.task_name = task_name
-        self.done = False
+        self.done = done
     
     def done_task(self):
         self.done = not self.done
 
     def conversion(self):
-        return f"{self.task_name} [ {"✅" if self.done else "❌"} ] "
+        return f"{self.task_name} [ {'✅' if self.done else '❌'} ] "
+
+    def to_dict(self):
+        return {"task_name": self.task_name, "done": self.done}
+
+    @staticmethod
+    def from_dict(data):
+        return Task(data["task_name"], data.get("done", False))
 
 class TaskManager:
     def __init__(self) -> None:
         self.tasks = []
+        self.file_name = "tasks.json"
+        self.load_from_file()
+
+    def save_to_file(self):
+        try:
+            with open(self.file_name, 'w', encoding='utf-8') as f:
+                json.dump([task.to_dict() for task in self.tasks], f, indent=4)
+        except Exception as e:
+            print(f"Error saving tasks: {e}")
+
+    def load_from_file(self):
+        if os.path.exists(self.file_name):
+            try:
+                with open(self.file_name, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    self.tasks = [Task.from_dict(item) for item in data]
+            except Exception as e:
+                print(f"Error loading tasks: {e}")
+                self.tasks = []
+        else:
+            self.tasks = []
 
     def add_task(self, name):
         new_task = Task(str(name))
         self.tasks.append(new_task)
+        self.save_to_file()
         print("=" * 20)
         print(f"{new_task.task_name} Added Successfully")
         print("=" * 20)
@@ -31,6 +62,7 @@ class TaskManager:
         
             elif ((index - 1) != -1):
                 self.tasks.pop(index - 1)
+                self.save_to_file()
                 print("=" * 20)
                 print(f"Task Number {index} Deleted Successfully")
                 print("=" * 20)
@@ -50,6 +82,7 @@ class TaskManager:
 
             elif ((index - 1) != -1):
                 self.tasks[index - 1].done_task()
+                self.save_to_file()
                 print("=" * 20)
                 print(f"Task '{self.tasks[index-1].task_name}' Marked Successfully")
                 print("=" *20)
@@ -69,6 +102,7 @@ class TaskManager:
             
             elif ((index - 1) != -1):
                 self.tasks[index - 1].task_name = edit_name
+                self.save_to_file()
                 print("=" * 20)
                 print(f"Task Number {index} Edited Successfully")
                 print("=" *20)
